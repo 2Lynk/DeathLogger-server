@@ -5,6 +5,8 @@
   --stone-2:#131722;
   --gold:#e4c26a;
   --gold-2:#e8c170;
+  --gold-3:#9b7e3c;
+  --red:#b13a2c;
   --parch:#f3e6c0;
   --parch-ink:#2f2512;
   --parch-edge:#c8b389;
@@ -119,7 +121,7 @@ a:hover{color:#fff}
 /* Coins inline */
 .coins svg{vertical-align:-2px;margin-left:3px;margin-right:6px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.25))}
 
-/* ===== Bags section (names only) ===== */
+/* ===== Bags section (with icons) ===== */
 .bags{margin-top:16px;padding:14px}
 .bags h3{margin:0 0 8px 0;color:#3a2a10}
 .bags .bags-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
@@ -142,20 +144,18 @@ a:hover{color:#fff}
 .bag-grid{display:grid;gap:4px}
 .bag-empty{color:#866c3c;font-style:italic;text-align:center;padding:6px 0}
 
+/* Each item row now shows an icon */
 .bag-item{
-  display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;
+  display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:8px;
   padding:4px 8px;border:1px solid #d7c6a1;border-radius:8px;
   background:linear-gradient(#fffaf0,#f1e2bd);
 }
-.bag-item .bullet{
-  width:10px;height:10px;border-radius:2px;background:var(--q,#ffffff);
-  border:1px solid rgba(0,0,0,.25);box-shadow:0 1px 0 #fff8;
+.bag-item .bag-icon{
+  width:20px;height:20px;border-radius:4px;border:1px solid #bfa67e;object-fit:cover;
+  background:#e8d8af;
+}
+.bag-item .bag-icon.placeholder{
+  display:inline-block;width:20px;height:20px;border-radius:4px;border:1px dashed #bfa67e;background:#efe2bd;
 }
 .bag-item .iname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bag-item .count{color:#6a5632;font-weight:700}
-
-/* Footer */
-.wow-footer{
-  margin-top:18px;border-top:1px solid rgba(255,255,255,.06);
-  padding:14px 18px;text-align:center;color:var(--muted);
-}
