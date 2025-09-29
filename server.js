@@ -9,7 +9,7 @@ import dayjs from "dayjs";
 import tga2png from "tga2png";
 
 // ------------------------- Config -------------------------
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 80;
 const DATA_DIR = path.resolve("data");
 const UPLOAD_DIR = path.resolve("uploads");
 
@@ -354,4 +354,5 @@ app.listen(PORT, () => {
   console.log(`DeathLogger server running at http://localhost:${PORT}`);
   console.log(`Tip: In WoW, set JPEG screenshots with: /console screenshotFormat jpg`);
 });
+
 
