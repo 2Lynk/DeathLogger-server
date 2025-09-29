@@ -1,204 +1,353 @@
-import fs from "fs";
-import path from "path";
+// server.js — DeathLogger mini site (HTML pages + API)
+// Node 18+ (ESM). Run with: node server.js
 import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 import multer from "multer";
-import { nanoid } from "nanoid";
-import dayjs from "dayjs";
-import tga2png from "tga2png";
+import path from "path";
+import fs from "fs/promises";
+import { createReadStream, existsSync } from "fs";
+import crypto from "crypto";
+import { fileURLToPath } from "url";
 
-// ------------------------- Config -------------------------
-const PORT = process.env.PORT || 3000;
-const DATA_DIR = path.resolve("data");
-const UPLOAD_DIR = path.resolve("uploads");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const MAX_JSON_BYTES = 2 * 1024 * 1024;
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
-
-// ------------------------- Bootstrap -------------------------
-fs.mkdirSync(DATA_DIR, { recursive: true });
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-const DB_FILE = path.join(DATA_DIR, "deaths.json");
-if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, "[]", "utf8");
-
-function readDB() {
-  try { return JSON.parse(fs.readFileSync(DB_FILE, "utf8")); }
-  catch { return []; }
-}
-function writeDB(rows) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(rows, null, 2), "utf8");
-}
-
-// ------------------------- Upload handling -------------------------
-function getSafeExtFromMime(mime) {
-  switch ((mime || "").toLowerCase()) {
-    case "image/jpeg": return ".jpg";
-    case "image/png":  return ".png";
-    case "image/webp": return ".webp";
-    case "image/tga":
-    case "image/x-tga": return ".tga";
-    default: return "";
-  }
-}
-function extFromOriginalName(name) {
-  const ext = path.extname(name || "").toLowerCase();
-  return [".jpg",".jpeg",".png",".webp",".tga"].includes(ext) ? ext : "";
-}
-const storage = multer.diskStorage({
-  destination: (_, __, cb) => cb(null, UPLOAD_DIR),
-  filename: (_req, file, cb) => {
-    const id = nanoid();
-    const byMime = getSafeExtFromMime(file.mimetype);
-    const byName = extFromOriginalName(file.originalname);
-    const ext = byName || byMime || ".bin";
-    cb(null, `${id}${ext}`);
-  },
-});
-const upload = multer({
-  storage,
-  limits: { fileSize: MAX_FILE_SIZE, fields: 10, files: 1 },
-  fileFilter: (_req, file, cb) => {
-    const mime = (file.mimetype || "").toLowerCase();
-    const okMime = ["image/jpeg","image/png","image/webp","image/tga","image/x-tga","application/octet-stream"].includes(mime);
-    const okExt = [".jpg",".jpeg",".png",".webp",".tga"].includes(extFromOriginalName(file.originalname));
-    if (okMime || okExt) return cb(null, true);
-    cb(new Error("Unsupported image type (allowing jpg/png/webp/tga)"));
-  },
-});
-
-// ------------------------- App -------------------------
 const app = express();
-app.disable("x-powered-by");
+const PORT = process.env.PORT || 3000;
 
-// Helmet with NO HSTS and NO auto-upgrade
-app.use(helmet({
-  hsts: false, // no HSTS on HTTP
-  contentSecurityPolicy: {
-    useDefaults: true,
-    directives: {
-      "default-src": ["'self'"],
-      "script-src": ["'self'"],
-      "style-src": ["'self'", "'unsafe-inline'"],
-      "img-src": ["'self'", "data:"],
-      "object-src": ["'none'"],
-      // CRUCIAL: disable auto-upgrade to HTTPS
-      "upgrade-insecure-requests": null
-    }
-  }
-}));
+// --- paths
+const DATA_DIR = path.join(__dirname, "data");
+const SHOTS_DIR = path.join(DATA_DIR, "screens");
+const PUBLIC_DIR = path.join(__dirname, "public");
 
-// Belt-and-suspenders: make sure no HSTS header slips in
-app.use((_, res, next) => {
-  res.removeHeader("Strict-Transport-Security");
-  next();
-});
+await fs.mkdir(DATA_DIR, { recursive: true });
+await fs.mkdir(SHOTS_DIR, { recursive: true });
+await fs.mkdir(PUBLIC_DIR, { recursive: true });
 
+// --- security headers (CSP allows inline CSS, no https upgrade)
+app.use(
+  helmet({
+    hsts: false,
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "script-src": ["'self'"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "img-src": ["'self'", "data:"],
+        "font-src": ["'self'", "data:"],
+        "object-src": ["'none'"],
+        // critical: don't auto-upgrade to https on an http server
+        "upgrade-insecure-requests": null,
+      },
+    },
+  })
+);
 
+// logs
 app.use(morgan("dev"));
-app.use(express.json({ limit: MAX_JSON_BYTES }));
-app.use("/uploads", express.static(UPLOAD_DIR, { fallthrough: false }));
-app.use("/public", express.static("public", { fallthrough: false }));
 
-// ------------------------- Layout helpers -------------------------
-function escapeHtml(s) {
-  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
-}
-function escapeAttr(s) { return escapeHtml(s).replaceAll("'","&#39;"); }
+// static
+app.use("/public", express.static(PUBLIC_DIR, { etag: true, maxAge: "1h" }));
+app.use("/screens", express.static(SHOTS_DIR, { etag: true, maxAge: "7d" }));
 
-function layout(title, body) {
-  return `<!doctype html>
+// ---------- small HTML helpers ----------
+const layout = (title, body) => `<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>${escapeHtml(title)}</title>
-<link rel="stylesheet" href="/public/style.css" />
+<link rel="stylesheet" href="/public/style.css"/>
 </head>
-<body>
-<header><h1>DeathLogger</h1><nav><a href="/">Home</a> | <a href="/api/deaths">API</a></nav></header>
-<main>
-${body}
-</main>
+<body class="wow">
+<header class="wow-header">
+  <div class="crest"><span class="crest-ring"></span><span class="crest-gem"></span></div>
+  <div class="title"><h1>DeathLogger</h1><p class="subtitle">Chronicle of Untimely Ends</p></div>
+  <nav class="nav">
+    <a href="/">Home</a>
+    <a href="/api/deaths">API</a>
+  </nav>
+</header>
+<main class="wow-main">${body}</main>
+<footer class="wow-footer"><p>© ${new Date().getFullYear()} DeathLogger — For Azeroth!</p></footer>
 </body>
 </html>`;
+
+const deathCard = (d) => {
+  const p = d.player ?? "Unknown";
+  const r = d.realm ?? "Unknown";
+  const cls = d.class ?? "";
+  const lvl = d.level ?? "";
+  const when = new Date((d.at ?? 0) * 1000).toLocaleString();
+  const inst = (d.instance?.instanceName ?? "") || "";
+  const loc = d.location
+    ? `${d.location.zone ?? ""}${d.location.subzone ? " — " + d.location.subzone : ""} (${fmtCoord(d.location)})`
+    : "";
+  const killer = fmtKiller(d.killer);
+
+  const money = fmtMoney(d);
+
+  return `
+<article class="card parchment">
+  <header class="card-header">
+    <h2><a href="/death/${d.id}">${escapeHtml(p)}-${escapeHtml(r)}</a></h2>
+    <div class="meta">
+      <span>${when}</span>
+      ${inst ? `<span>${escapeHtml(inst)}</span>` : ""}
+      ${loc ? `<span>${escapeHtml(loc)}</span>` : ""}
+      ${cls || lvl ? `<span>${escapeHtml([cls, lvl && "Lv. " + lvl].filter(Boolean).join(" · "))}</span>` : ""}
+    </div>
+  </header>
+  <section class="card-body">
+    <p><strong>Slain by:</strong> ${escapeHtml(killer)}</p>
+    ${money ? `<p><strong>Money:</strong> ${money}</p>` : ""}
+    ${d.screenshot ? `<a class="screenshot-link" href="${d.screenshot}" target="_blank">View screenshot</a>` : ""}
+  </section>
+</article>`;
+};
+
+const deathDetail = (d) => {
+  const base = deathCard(d);
+  const eq = fmtEquipped(d.equipped);
+  const bags = fmtBags(d.bags);
+  return `
+${base}
+<section class="grid">
+  <div class="card parchment">
+    <h3>Equipped</h3>
+    ${eq || "<p class='muted'>No equipment recorded.</p>"}
+  </div>
+  <div class="card parchment">
+    <h3>Bags</h3>
+    ${bags || "<p class='muted'>No bag contents recorded.</p>"}
+  </div>
+</section>`;
+};
+
+const profilePage = (slug, deaths) => {
+  const [player, realm] = slug.split("@");
+  const list = deaths.map(deathCard).join("");
+  const totals = tallyTotals(deaths);
+  return `
+<section class="card parchment">
+  <h2>Profile: ${escapeHtml(player)} - ${escapeHtml(realm)}</h2>
+  <p><strong>Total deaths:</strong> ${deaths.length}</p>
+  ${totals.gold !== null ? `<p><strong>Total gold lost (recorded entries):</strong> ${totals.gold}</p>` : ""}
+</section>
+<section class="grid">
+  ${list || "<p class='parchment empty'>No deaths yet for this character.</p>"}
+</section>`;
+};
+
+// ---------- formatters ----------
+function fmtMoney(d) {
+  // prefer moneyGold/Silver/Copper, fallback to moneyCopperOnly
+  if (d.moneyGold != null || d.moneySilver != null || d.moneyCopper != null) {
+    const g = d.moneyGold ?? 0;
+    const s = d.moneySilver ?? 0;
+    const c = d.moneyCopper ?? 0;
+    return `${g}g ${s}s ${c}c`;
+  }
+  if (d.moneyCopperOnly != null) {
+    const total = d.moneyCopperOnly;
+    const g = Math.floor(total / 10000);
+    const s = Math.floor((total % 10000) / 100);
+    const c = total % 100;
+    return `${g}g ${s}s ${c}c`;
+  }
+  return "";
+}
+function fmtCoord(loc = {}) {
+  if (typeof loc.x === "number" && typeof loc.y === "number") {
+    return `${loc.x.toFixed(2)}, ${loc.y.toFixed(2)}`;
+  }
+  return "";
+}
+function fmtKiller(k) {
+  if (!k) return "Unknown";
+  const who = k.sourceName || "Unknown";
+  const via = k.spellName || k.detail || k.subevent || "Unknown";
+  return `${who} (${via})`;
+}
+function fmtEquipped(eq) {
+  if (!Array.isArray(eq) || eq.length === 0) return "";
+  const items = eq
+    .map((it) => it?.hyperlink)
+    .filter(Boolean)
+    .map(readableItemLink)
+    .map((name, i) => `<li>${escapeHtml(name)}</li>`)
+    .join("");
+  return `<ul class="list">${items}</ul>`;
+}
+function fmtBags(bags) {
+  if (!Array.isArray(bags) || bags.length === 0) return "";
+  const out = [];
+  for (const bag of bags) {
+    const slots = Array.isArray(bag?.slots) ? bag.slots : [];
+    const lis = slots
+      .map((s) => {
+        const name = readableItemLink(s?.hyperlink) || `Item ${s?.itemID ?? ""}`;
+        const count = s?.stackCount ?? 1;
+        return `<li>${escapeHtml(name)}${count > 1 ? ` x${count}` : ""}</li>`;
+      })
+      .join("");
+    out.push(`<div class="bag"><h4>Bag ${bag?.bagID ?? ""}</h4><ul class="list">${lis || "<li class='muted'>Empty</li>"}</ul></div>`);
+  }
+  return `<div class="bags">${out.join("")}</div>`;
+}
+function readableItemLink(link) {
+  // link looks like |cffffffff|Hitem:117::::::::1:::::::::|h[Tough Jerky]|h|r
+  if (!link || typeof link !== "string") return "";
+  const m = link.match(/\|h\[(.*?)\]\|h/);
+  return m ? m[1] : link;
 }
 
-function summaryCard(d) {
-  const ts = d.at ? dayjs.unix(d.at).format("YYYY-MM-DD HH:mm:ss") : "unknown";
-  return `<article>
-    <h2><a href="/death/${d.id}">${escapeHtml(d.player||"Unknown")} @ ${escapeHtml(d.realm||"?")}</a></h2>
-    <p>When: ${ts}</p>
-    <p>Killer: ${escapeHtml(d.killer?.sourceName||"Unknown")}</p>
-    ${d.screenshot ? `<img src="${escapeAttr(d.screenshot)}" style="max-width:300px;" />` : ""}
-  </article>`;
+function escapeHtml(s = "") {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
-// ------------------------- Routes -------------------------
-app.get("/", (_req, res) => {
-  const rows = readDB().sort((a, b) => (b.at ?? 0) - (a.at ?? 0));
-  const cards = rows.map(summaryCard).join("\n");
-  res.type("html").send(layout("Deaths", cards || "<p>No deaths yet</p>"));
-});
+function slugFor(d) {
+  const p = d.player ?? "Unknown";
+  const r = d.realm ?? "Unknown";
+  return `${p}@${r}`;
+}
+function tallyTotals(deaths) {
+  // just sum moneyCopperOnly when present
+  let sum = 0;
+  let count = 0;
+  for (const d of deaths) {
+    if (typeof d.moneyCopperOnly === "number") {
+      sum += d.moneyCopperOnly;
+      count++;
+    }
+  }
+  if (count === 0) return { gold: null };
+  const g = Math.floor(sum / 10000);
+  const s = Math.floor((sum % 10000) / 100);
+  const c = sum % 100;
+  return { gold: `${g}g ${s}s ${c}c` };
+}
 
-app.get("/death/:id", (req, res) => {
-  const id = req.params.id;
-  const rows = readDB();
-  const d = rows.find(r => r.id === id);
-  if (!d) return res.status(404).send("Not found");
-  res.type("html").send(layout("Death Detail", `<pre>${escapeHtml(JSON.stringify(d,null,2))}</pre>`));
-});
+// ---------- storage ----------
+const DEATHS_JSON = path.join(DATA_DIR, "deaths.json");
 
-app.get("/api/deaths", (_req, res) => {
-  const rows = readDB().sort((a, b) => (b.at ?? 0) - (a.at ?? 0));
-  res.json(rows);
-});
-
-app.post("/upload", upload.single("screenshot"), express.text({ type: "text/plain", limit: MAX_JSON_BYTES }), async (req, res) => {
+async function loadDeaths() {
+  if (!existsSync(DEATHS_JSON)) return [];
+  const buf = await fs.readFile(DEATHS_JSON, "utf8");
   try {
-    let deathRaw = req.body.death;
-    if (!deathRaw && typeof req.body === "string") deathRaw = req.body;
-    if (!deathRaw) return res.status(400).json({ error: "missing_death_json" });
+    const arr = JSON.parse(buf);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+async function saveDeaths(arr) {
+  await fs.writeFile(DEATHS_JSON, JSON.stringify(arr, null, 2));
+}
 
-    let payload;
-    try { payload = JSON.parse(deathRaw); }
-    catch (e) { return res.status(400).json({ error: "bad_json", detail: String(e) }); }
+// ---------- upload endpoint ----------
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    // Allow jpg/png/webp only
+    const ok = ["image/jpeg", "image/png", "image/webp"].includes(file.mimetype);
+    if (!ok) return cb(new Error("Unsupported image type (jpg/png/webp only)"));
+    cb(null, true);
+  },
+});
 
-    let publicPath = null;
+app.post("/upload", upload.single("screenshot"), express.urlencoded({ extended: true }), async (req, res) => {
+  try {
+    const deathRaw = req.body?.death;
+    if (!deathRaw) return res.status(400).json({ error: "Missing death payload" });
+    const death = JSON.parse(deathRaw);
+
+    // ID & filename
+    const id = crypto.randomUUID();
+    death.id = id;
+
+    // Save screenshot if provided
     if (req.file) {
-      const orig = req.file.path;
-      const ext = path.extname(orig).toLowerCase();
-      if (ext === ".tga") {
-        try {
-          const tgaBuf = fs.readFileSync(orig);
-          const pngBuf = tga2png(tgaBuf);
-          const dest = path.join(UPLOAD_DIR, `${path.basename(orig, ext)}.png`);
-          fs.writeFileSync(dest, pngBuf);
-          fs.unlinkSync(orig);
-          publicPath = `/uploads/${path.basename(dest)}`;
-        } catch (err) {
-          console.error("TGA convert failed:", err);
-          publicPath = `/uploads/${path.basename(orig)}`;
-        }
-      } else {
-        publicPath = `/uploads/${path.basename(orig)}`;
-      }
+      const ext = req.file.mimetype === "image/png" ? "png" : req.file.mimetype === "image/webp" ? "webp" : "jpg";
+      const name = `${id}.${ext}`;
+      const out = path.join(SHOTS_DIR, name);
+      await fs.writeFile(out, req.file.buffer);
+      death.screenshot = `/screens/${name}`;
     }
 
-    const id = nanoid();
-    const now = Math.floor(Date.now() / 1000);
-    const record = { id, receivedAt: now, ...payload, at: payload.at || now, screenshot: publicPath };
-    const rows = readDB(); rows.push(record); writeDB(rows);
-    res.json({ ok: true, id });
-  } catch (err) {
-    console.error("upload error:", err);
-    res.status(500).json({ error: "server_error" });
+    // Persist
+    const all = await loadDeaths();
+    all.unshift(death);
+    await saveDeaths(all);
+
+    res.json({ ok: true, id, screenshot: death.screenshot ?? null });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: String(e) });
   }
 });
 
-// ------------------------- Start -------------------------
-app.listen(PORT, () => {
-  console.log(`DeathLogger server running at http://localhost:${PORT}`);
+// ---------- HTML pages ----------
+
+// Home: latest deaths
+app.get("/", async (_req, res) => {
+  const deaths = await loadDeaths();
+  const body =
+    deaths.length === 0
+      ? `<section class='grid'><p class='parchment empty'>No deaths yet. The chronicles await…</p></section>`
+      : `<section class="grid">${deaths.slice(0, 50).map(deathCard).join("")}</section>`;
+  res.type("html").send(layout("Deaths", body));
 });
 
+// Death detail page (HTML)
+app.get("/death/:id", async (req, res) => {
+  const deaths = await loadDeaths();
+  const d = deaths.find((x) => x.id === req.params.id);
+  if (!d) return res.status(404).type("html").send(layout("Not found", `<p class='parchment'>Death not found.</p>`));
+  const body = deathDetail(d);
+  res.type("html").send(layout(`Death of ${escapeHtml(d.player ?? "Unknown")}`, body));
+});
+
+// Player profile (HTML)
+app.get("/player/:slug", async (req, res) => {
+  const deaths = await loadDeaths();
+  const mine = deaths.filter((d) => slugFor(d) === req.params.slug);
+  if (mine.length === 0) {
+    return res
+      .status(404)
+      .type("html")
+      .send(layout("Profile not found", `<p class='parchment'>No records for ${escapeHtml(req.params.slug)}.</p>`));
+  }
+  res.type("html").send(layout(`Profile ${escapeHtml(req.params.slug)}`, profilePage(req.params.slug, mine)));
+});
+
+// ---------- JSON APIs (kept for tooling) ----------
+app.get("/api/deaths", async (_req, res) => {
+  const deaths = await loadDeaths();
+  res.json(deaths);
+});
+app.get("/api/death/:id", async (req, res) => {
+  const deaths = await loadDeaths();
+  const d = deaths.find((x) => x.id === req.params.id);
+  if (!d) return res.status(404).json({ error: "not_found" });
+  res.json(d);
+});
+
+// ---------- favicon (optional nice-to-have) ----------
+app.get("/favicon.ico", (_req, res) => {
+  const ico = path.join(PUBLIC_DIR, "favicon.ico");
+  if (existsSync(ico)) return createReadStream(ico).pipe(res);
+  res.status(204).end();
+});
+
+// ---------- start ----------
+app.listen(PORT, () => {
+  console.log(`DeathLogger site on http://0.0.0.0:${PORT}`);
+});
