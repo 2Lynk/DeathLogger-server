@@ -9,13 +9,12 @@ import dayjs from "dayjs";
 import tga2png from "tga2png";
 
 // ------------------------- Config -------------------------
-const PORT = process.env.PORT || 80;
+const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.resolve("data");
 const UPLOAD_DIR = path.resolve("uploads");
 
-// Max sizes
-const MAX_JSON_BYTES = 2 * 1024 * 1024; // 2 MB
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const MAX_JSON_BYTES = 2 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 // ------------------------- Bootstrap -------------------------
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -73,13 +72,12 @@ const upload = multer({
 const app = express();
 app.disable("x-powered-by");
 
-// Helmet with NO HSTS and NO upgrade-insecure-requests
+// Helmet with NO HSTS and NO auto-upgrade
 app.use(helmet({
   hsts: false,
   contentSecurityPolicy: {
     useDefaults: true,
     directives: {
-      // DO NOT set 'upgrade-insecure-requests'
       "default-src": ["'self'"],
       "script-src": ["'self'"],
       "style-src": ["'self'", "'unsafe-inline'"],
@@ -89,61 +87,23 @@ app.use(helmet({
   }
 }));
 
-// In case a proxy in front added it earlier, strip the header anyway:
+// Ensure no HSTS header slips in
 app.use((_, res, next) => {
   res.removeHeader("Strict-Transport-Security");
   next();
 });
 
-// ------------------------- WoW-ish helpers -------------------------
-const CLASS_COLORS = {
-  WARRIOR:"#C79C6E", PALADIN:"#F58CBA", HUNTER:"#ABD473", ROGUE:"#FFF569", PRIEST:"#FFFFFF",
-  DEATHKNIGHT:"#C41E3A", SHAMAN:"#0070DE", MAGE:"#40C7EB", WARLOCK:"#8788EE", MONK:"#00FF96",
-  DRUID:"#FF7D0A", DEMONHUNTER:"#A330C9", EVOKER:"#33937F"
-};
+app.use(morgan("dev"));
+app.use(express.json({ limit: MAX_JSON_BYTES }));
+app.use("/uploads", express.static(UPLOAD_DIR, { fallthrough: false }));
+app.use("/public", express.static("public", { fallthrough: false }));
 
-function classBadge(cls, lvl) {
-  const color = CLASS_COLORS[(cls || "").toUpperCase()] || "#E8C170";
-  const safeClass = escapeHtml(cls || "?");
-  const safeLvl = lvl != null ? escapeHtml(String(lvl)) : "?";
-  return `<span class="wow-badge" style="--class-color:${color}">${safeClass} <span class="lvl">Lv ${safeLvl}</span></span>`;
-}
-
-function coinSVG(fill) {
-  return `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="${fill}" stroke="#000" stroke-opacity=".35"/></svg>`;
-}
-const ICON_G = coinSVG("#C79C00");
-const ICON_S = coinSVG("#A0A5B5");
-const ICON_C = coinSVG("#B87333");
-
-function moneyString(d) {
-  if (typeof d.moneyCopper === "number") {
-    const g = Math.floor(d.moneyCopper / 10000);
-    const s = Math.floor((d.moneyCopper % 10000) / 100);
-    const c = d.moneyCopper % 100;
-    return `<span class="coins">${g}${ICON_G} ${s}${ICON_S} ${c}${ICON_C}</span>`;
-  }
-  const g = d.moneyGold ?? 0, s = d.moneySilver ?? 0, c = d.moneyCopperOnly ?? 0;
-  return `<span class="coins">${g}${ICON_G} ${s}${ICON_S} ${c}${ICON_C}</span>`;
-}
-
-function coordStr(d) {
-  const x = d.location?.x, y = d.location?.y;
-  if (typeof x === "number" && typeof y === "number") return ` — (${x.toFixed(2)}, ${y.toFixed(2)})`;
-  return "";
-}
-
+// ------------------------- Layout helpers -------------------------
 function escapeHtml(s) {
   return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 }
 function escapeAttr(s) { return escapeHtml(s).replaceAll("'","&#39;"); }
 
-// ---- Item helpers (parse WoW item hyperlink like: |cffa335ee|Hitem:...|h[Name]|h|r) ----
-const QUALITY_COLORS = { 0:"#9d9d9d", 1:"#ffffff", 2:"#1eff00", 3:"#0070dd", 4:"#a335ee", 5:"#ff8000", 6:"#e6cc80" };
-function itemNameFromLink(link){ if(!link||typeof link!=="string")return null; const m=link.match(/\|h\[(.*?)\]\|h/); return m?m[1]:null; }
-function itemColorFromLink(link){ if(!link||typeof link!=="string")return null; const m=link.match(/\|c([0-9a-fA-F]{8})/); if(!m)return null; return "#"+m[1].slice(2).toLowerCase(); }
-
-// ------------------------- Views (WoW-styled) -------------------------
 function layout(title, body) {
   return `<!doctype html>
 <html lang="en">
@@ -154,131 +114,37 @@ function layout(title, body) {
 <link rel="stylesheet" href="/public/style.css" />
 </head>
 <body>
-<header class="wow-header">
-  <div class="crest">
-    <span class="crest-ring"></span>
-    <span class="crest-gem"></span>
-  </div>
-  <div class="title">
-    <h1>DeathLogger</h1>
-    <p class="subtitle">Chronicle of Untimely Ends</p>
-  </div>
-  <nav class="nav">
-    <a href="/">Home</a>
-    <a href="/api/deaths">API</a>
-  </nav>
-</header>
-<main class="wow-main">
+<header><h1>DeathLogger</h1><nav><a href="/">Home</a> | <a href="/api/deaths">API</a></nav></header>
+<main>
 ${body}
 </main>
-<footer class="wow-footer">
-  <p>© ${new Date().getFullYear()} DeathLogger — For Azeroth!</p>
-</footer>
 </body>
 </html>`;
 }
 
 function summaryCard(d) {
   const ts = d.at ? dayjs.unix(d.at).format("YYYY-MM-DD HH:mm:ss") : "unknown";
-  const title = `${escapeHtml(d.player || "Unknown")} @ ${escapeHtml(d.realm || "?")}`;
-  const where = d.location?.zone ? `${d.location.zone}${d.location.subzone ? " — " + d.location.subzone : ""}` : "Unknown";
-  const killer = d.killer?.sourceName ? `${d.killer.sourceName}${d.killer.detail ? " (" + d.killer.detail + ")" : ""}` : "Unknown";
-  const cls = classBadge(d.class, d.level);
-  const money = moneyString(d);
-
-  return `<article class="parchment card">
-    <div class="card-left">
-      <h2><a class="wow-link" href="/death/${d.id}">${title}</a></h2>
-      <p><span class="label">When:</span> ${ts}</p>
-      <p><span class="label">Where:</span> ${escapeHtml(where)}</p>
-      <p><span class="label">Killer:</span> ${escapeHtml(killer)}</p>
-      <p><span class="label">Adventurer:</span> ${cls}</p>
-      <p><span class="label">Money:</span> ${money}</p>
-    </div>
-    <div class="card-right">
-      ${d.screenshot ? `<img class="shot" src="${escapeAttr(d.screenshot)}" alt="screenshot" />` : `<div class="shot placeholder">No Screenshot</div>`}
-    </div>
+  return `<article>
+    <h2><a href="/death/${d.id}">${escapeHtml(d.player||"Unknown")} @ ${escapeHtml(d.realm||"?")}</a></h2>
+    <p>When: ${ts}</p>
+    <p>Killer: ${escapeHtml(d.killer?.sourceName||"Unknown")}</p>
+    ${d.screenshot ? `<img src="${escapeAttr(d.screenshot)}" style="max-width:300px;" />` : ""}
   </article>`;
-}
-
-// ---- Bags (names only; no icons) ----
-function renderBags(bags) {
-  if (!Array.isArray(bags) || bags.length === 0) {
-    return `<section class="parchment bags"><h3>Bags</h3><p class="bags-empty">No bag data.</p></section>`;
-  }
-
-  const bagCards = bags.map((bag) => {
-    const slots = Array.isArray(bag.slots) ? bag.slots : [];
-    const items = slots.map((it) => {
-      const name = itemNameFromLink(it.hyperlink) || (it.itemID ? `Item #${it.itemID}` : "Unknown Item");
-      const color = itemColorFromLink(it.hyperlink) || QUALITY_COLORS[it.quality ?? 1] || "#ffffff";
-      const count = (typeof it.stackCount === "number" && it.stackCount > 1) ? ` × ${it.stackCount}` : "";
-      return `<div class="bag-item" style="--q:${escapeAttr(color)}">
-        <span class="bullet"></span>
-        <span class="iname" ${it.hyperlink ? `title="${escapeAttr(it.hyperlink)}"` : ""} style="color:${escapeAttr(color)}">${escapeHtml(name)}</span>
-        <span class="count">${escapeHtml(count)}</span>
-      </div>`;
-    }).join("") || `<div class="bag-empty">— Empty —</div>`;
-
-    const bagLabel = (bag.bagID === 0) ? "Backpack" : `Bag ${bag.bagID}`;
-    return `<div class="bag">
-      <div class="bag-title">${escapeHtml(bagLabel)}</div>
-      <div class="bag-grid">${items}</div>
-    </div>`;
-  }).join("");
-
-  return `<section class="parchment bags">
-    <h3>Bags</h3>
-    <div class="bags-wrap">${bagCards}</div>
-  </section>`;
-}
-
-function detailView(d) {
-  const ts = d.at ? dayjs.unix(d.at).format("YYYY-MM-DD HH:mm:ss") : "unknown";
-  const cls = classBadge(d.class, d.level);
-  const money = moneyString(d);
-  const bagSection = renderBags(d.bags);
-
-  return `<section class="parchment detail">
-    <div class="decor top"></div>
-    <h2>${escapeHtml(d.player || "Unknown")} <span class="realm">@ ${escapeHtml(d.realm || "?")}</span></h2>
-    <div class="meta">
-      <div><span class="label">When:</span> ${ts}</div>
-      <div><span class="label">Adventurer:</span> ${cls}</div>
-      <div><span class="label">Location:</span> ${escapeHtml(d.location?.zone || "Unknown")}${d.location?.subzone ? " — " + escapeHtml(d.location.subzone) : ""}${coordStr(d)}</div>
-      <div><span class="label">Killer:</span> ${escapeHtml(d.killer?.sourceName || "Unknown")}${d.killer?.detail ? " (" + escapeHtml(d.killer.detail) + ")" : ""}</div>
-      <div><span class="label">Money:</span> ${money}</div>
-    </div>
-
-    ${d.screenshot ? `<figure class="figure"><img class="full" src="${escapeAttr(d.screenshot)}" alt="screenshot" /></figure>` : ""}
-
-    ${bagSection}
-
-    <details class="raw">
-      <summary>Show Raw Chronicle (JSON)</summary>
-      <pre>${escapeHtml(JSON.stringify(d, null, 2))}</pre>
-    </details>
-    <div class="decor bottom"></div>
-  </section>`;
 }
 
 // ------------------------- Routes -------------------------
 app.get("/", (_req, res) => {
   const rows = readDB().sort((a, b) => (b.at ?? 0) - (a.at ?? 0));
   const cards = rows.map(summaryCard).join("\n");
-  res.type("html").send(layout("Deaths", `
-    <section class="grid">
-      ${cards || "<p class='parchment empty'>No deaths yet. The chronicles await…</p>"}
-    </section>
-  `));
+  res.type("html").send(layout("Deaths", cards || "<p>No deaths yet</p>"));
 });
 
 app.get("/death/:id", (req, res) => {
   const id = req.params.id;
   const rows = readDB();
   const d = rows.find(r => r.id === id);
-  if (!d) return res.status(404).type("html").send(layout("Not found", "<p class='parchment empty'>Death not found.</p>"));
-  res.type("html").send(layout("Death Detail", detailView(d)));
+  if (!d) return res.status(404).send("Not found");
+  res.type("html").send(layout("Death Detail", `<pre>${escapeHtml(JSON.stringify(d,null,2))}</pre>`));
 });
 
 app.get("/api/deaths", (_req, res) => {
@@ -286,15 +152,6 @@ app.get("/api/deaths", (_req, res) => {
   res.json(rows);
 });
 
-app.get("/api/deaths/:id", (req, res) => {
-  const id = req.params.id;
-  const rows = readDB();
-  const d = rows.find(r => r.id === id);
-  if (!d) return res.status(404).json({ error: "not_found" });
-  res.json(d);
-});
-
-// Upload endpoint
 app.post("/upload", upload.single("screenshot"), express.text({ type: "text/plain", limit: MAX_JSON_BYTES }), async (req, res) => {
   try {
     let deathRaw = req.body.death;
@@ -305,7 +162,6 @@ app.post("/upload", upload.single("screenshot"), express.text({ type: "text/plai
     try { payload = JSON.parse(deathRaw); }
     catch (e) { return res.status(400).json({ error: "bad_json", detail: String(e) }); }
 
-    // If screenshot is .tga, convert to .png and replace path
     let publicPath = null;
     if (req.file) {
       const orig = req.file.path;
@@ -319,7 +175,7 @@ app.post("/upload", upload.single("screenshot"), express.text({ type: "text/plai
           fs.unlinkSync(orig);
           publicPath = `/uploads/${path.basename(dest)}`;
         } catch (err) {
-          console.error("TGA convert failed, keeping original:", err);
+          console.error("TGA convert failed:", err);
           publicPath = `/uploads/${path.basename(orig)}`;
         }
       } else {
@@ -329,19 +185,8 @@ app.post("/upload", upload.single("screenshot"), express.text({ type: "text/plai
 
     const id = nanoid();
     const now = Math.floor(Date.now() / 1000);
-    const record = {
-      id,
-      receivedAt: now,
-      ...payload,
-      at: typeof payload.at === "number" ? payload.at : now,
-      player: payload.player || "Unknown",
-      realm: payload.realm || "Unknown",
-      screenshot: publicPath,
-    };
-
-    const rows = readDB();
-    rows.push(record);
-    writeDB(rows);
+    const record = { id, receivedAt: now, ...payload, at: payload.at || now, screenshot: publicPath };
+    const rows = readDB(); rows.push(record); writeDB(rows);
     res.json({ ok: true, id });
   } catch (err) {
     console.error("upload error:", err);
@@ -352,7 +197,4 @@ app.post("/upload", upload.single("screenshot"), express.text({ type: "text/plai
 // ------------------------- Start -------------------------
 app.listen(PORT, () => {
   console.log(`DeathLogger server running at http://localhost:${PORT}`);
-  console.log(`Tip: In WoW, set JPEG screenshots with: /console screenshotFormat jpg`);
 });
-
-
