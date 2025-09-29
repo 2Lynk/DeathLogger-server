@@ -87,10 +87,12 @@ const layout = (title, body) => `<!doctype html>
 <link rel="stylesheet" href="/public/style.css"/>
 </head>
 <body class="armory">
+// inside layout() HTML, replace this bit:
 <header class="a-header">
   <div class="a-wrap">
     <div class="a-brand">
-      <span class="crest-ring"></span><span class="crest-gem"></span>
+-     <span class="crest-ring"></span><span class="crest-gem"></span>
++     <div class="crest"><span class="crest-ring"></span><span class="crest-gem"></span></div>
       <div class="titling">
         <h1>DeathLogger</h1>
         <p class="subtitle">Armory of Untimely Ends</p>
@@ -389,3 +391,4 @@ app.get("/favicon.ico", (_req, res) => {
 app.listen(PORT, () => {
   console.log(`DeathLogger site on http://0.0.0.0:${PORT}`);
 });
+
