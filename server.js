@@ -72,11 +72,14 @@ const upload = multer({
 // ------------------------- App -------------------------
 const app = express();
 app.disable("x-powered-by");
+
+// Helmet with NO HSTS and NO upgrade-insecure-requests
 app.use(helmet({
-  // Keep things simple: allow self CSS/JS/images; no upgrade-insecure-requests (helps when serving over plain HTTP)
+  hsts: false,
   contentSecurityPolicy: {
     useDefaults: true,
     directives: {
+      // DO NOT set 'upgrade-insecure-requests'
       "default-src": ["'self'"],
       "script-src": ["'self'"],
       "style-src": ["'self'", "'unsafe-inline'"],
@@ -85,10 +88,12 @@ app.use(helmet({
     }
   }
 }));
-app.use(morgan("dev"));
-app.use(express.json({ limit: MAX_JSON_BYTES }));
-app.use("/uploads", express.static(UPLOAD_DIR, { fallthrough: false }));
-app.use("/public", express.static("public", { fallthrough: false }));
+
+// In case a proxy in front added it earlier, strip the header anyway:
+app.use((_, res, next) => {
+  res.removeHeader("Strict-Transport-Security");
+  next();
+});
 
 // ------------------------- WoW-ish helpers -------------------------
 const CLASS_COLORS = {
@@ -349,3 +354,4 @@ app.listen(PORT, () => {
   console.log(`DeathLogger server running at http://localhost:${PORT}`);
   console.log(`Tip: In WoW, set JPEG screenshots with: /console screenshotFormat jpg`);
 });
+
