@@ -1,0 +1,161 @@
+/* ======= World of Warcraft-ish theme (no external assets) ======= */
+
+:root{
+  --stone:#0d0f13;
+  --stone-2:#131722;
+  --gold:#e4c26a;
+  --gold-2:#e8c170;
+  --gold-3:#9b7e3c;
+  --red:#b13a2c;
+  --parch:#f3e6c0;
+  --parch-ink:#2f2512;
+  --parch-edge:#c8b389;
+  --ink:#e8e8e8;
+  --muted:#aeb4c0;
+  --border:#2a2f3a;
+  --shadow:0 8px 24px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:
+  radial-gradient(1200px 800px at 10% 0, #121622 0, rgba(0,0,0,0) 60%),
+  radial-gradient(800px 600px at 100% 100%, #0f121a 0, rgba(0,0,0,0) 50%),
+  var(--stone);
+color:var(--ink);font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;}
+
+a{color:var(--gold-2);text-decoration:none}
+a:hover{color:#fff}
+
+.wow-header{
+  position:sticky;top:0;z-index:10;
+  display:flex;align-items:center;gap:16px;
+  padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);
+  background:linear-gradient(180deg, #121723, #0d1016);
+  box-shadow:0 4px 18px rgba(0,0,0,.35);
+}
+.wow-header .crest{position:relative;width:48px;height:48px;flex:0 0 48px;}
+.crest-ring{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #fff7, #0000),
+             conic-gradient(from 0deg, #a47d2a, #d4b459, #a47d2a);
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));}
+.crest-gem{position:absolute;left:11px;top:11px;width:26px;height:26px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%, #ffd, #e6b24f 30%, #8a682b 70%, #3a2a10);border:2px solid #2d200b;}
+
+.wow-header .title{flex:1}
+.wow-header h1{
+  margin:0;letter-spacing:.06em;
+  font-weight:800;font-size:20px;text-transform:uppercase;
+  color:var(--gold);
+  text-shadow:0 0 14px rgba(228,194,106,.35), 0 1px 0 #000;
+}
+.wow-header .subtitle{margin:2px 0 0 0;color:var(--muted);font-size:12px;letter-spacing:.08em;}
+
+.wow-header .nav a{
+  margin-left:12px;padding:6px 10px;border:1px solid rgba(255,255,255,.08);
+  border-radius:6px;color:#dcdcdc;background:linear-gradient(#161b27,#10141d);}
+.wow-header .nav a:hover{border-color:var(--gold-2);color:#fff}
+
+.wow-main{max-width:1100px;margin:0 auto;padding:18px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:18px}
+
+/* Parchment blocks */
+.parchment{
+  background:
+    radial-gradient(600px 200px at 50% -40%, rgba(0,0,0,.25), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,0) 120px),
+    linear-gradient(180deg, #f6ebc9, #eddab0);
+  color:var(--parch-ink);
+  border:1px solid var(--parch-edge);
+  box-shadow:var(--shadow);
+  border-radius:12px;
+}
+.parchment .label{font-weight:700;color:#6c5531}
+
+.card{display:grid;grid-template-columns:1fr 150px;gap:14px;padding:14px 14px 12px 14px;}
+.card h2{margin:0 0 6px;font-size:18px;color:#3a2a10}
+.card .wow-link{color:#7a5b1a}
+.card .wow-link:hover{color:#000}
+.card p{margin:4px 0 0 0}
+
+.card .shot{
+  width:150px;height:112px;object-fit:cover;border-radius:8px;border:1px solid #bfa67e;
+  box-shadow:0 3px 10px rgba(0,0,0,.25);
+}
+.card .shot.placeholder{
+  display:grid;place-items:center;width:150px;height:112px;border-radius:8px;border:1px dashed #bfa67e;color:#8a6c3a;background:#efe2bd;
+  font-size:12px;
+}
+
+.detail{padding:18px 18px 14px}
+.detail h2{margin:0 0 10px;font-size:22px;color:#2f2512;letter-spacing:.02em}
+.detail .realm{font-weight:600;color:#6c5531}
+.detail .meta{display:grid;gap:6px;margin-bottom:12px}
+.detail .figure{margin:10px 0 12px}
+.detail img.full{width:100%;height:auto;border-radius:12px;border:1px solid #bfa67e;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.detail .raw summary{cursor:pointer;color:#6c5531}
+.detail pre{background:#0b0d12;color:#e6e6e6;padding:12px;border-radius:8px;border:1px solid #2a2f3a;overflow-x:auto;font-size:12px}
+
+.parchment.empty{padding:16px;text-align:center}
+
+/* Decorative bars */
+.decor{height:10px;position:relative}
+.decor:before,.decor:after{
+  content:"";position:absolute;top:3px;bottom:3px;border-top:2px solid #bfa67e;border-bottom:2px solid #bfa67e;width:46%;}
+.decor.top:before{left:0} .decor.top:after{right:0}
+.decor.bottom:before{left:0} .decor.bottom:after{right:0}
+
+/* Class badge */
+.wow-badge{
+  display:inline-block;background:linear-gradient(#f6f0da,#edd49f);
+  border:1px solid #c3a769;border-radius:999px;padding:2px 10px;font-weight:800;letter-spacing:.03em;
+  box-shadow:inset 0 1px 0 #fff8, 0 3px 8px rgba(0,0,0,.25);
+  color:var(--parch-ink); position:relative;
+}
+.wow-badge::after{
+  content:"";position:absolute;inset:0;border-radius:999px;box-shadow:0 0 0 2px var(--class-color) inset, 0 0 12px var(--class-color,.2);
+  pointer-events:none;opacity:.6;
+}
+.wow-badge .lvl{font-weight:900;margin-left:6px;color:#2b2415}
+
+/* Coins inline */
+.coins svg{vertical-align:-2px;margin-left:3px;margin-right:6px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.25))}
+
+/* ===== Bags section (with icons) ===== */
+.bags{margin-top:16px;padding:14px}
+.bags h3{margin:0 0 8px 0;color:#3a2a10}
+.bags .bags-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+
+.bag{
+  background:linear-gradient(#f7edd0,#efdeb3);
+  border:1px solid #d2be95;border-radius:10px;padding:10px 10px 8px;
+  box-shadow:inset 0 1px 0 #fff8;
+}
+.bag-title{
+  font-weight:800;color:#5a4526;letter-spacing:.02em;margin-bottom:6px;
+  display:flex;align-items:center;gap:8px;
+}
+.bag-title::before{
+  content:"";width:10px;height:10px;border-radius:50%;
+  background:radial-gradient(circle at 40% 40%, #fff, #e6b24f 40%, #8a682b 80%, #3a2a10);
+  border:1px solid #2d200b;display:inline-block;
+}
+
+.bag-grid{display:grid;gap:4px}
+.bag-empty{color:#866c3c;font-style:italic;text-align:center;padding:6px 0}
+
+/* Each item row now shows an icon */
+.bag-item{
+  display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:8px;
+  padding:4px 8px;border:1px solid #d7c6a1;border-radius:8px;
+  background:linear-gradient(#fffaf0,#f1e2bd);
+}
+.bag-item .bag-icon{
+  width:20px;height:20px;border-radius:4px;border:1px solid #bfa67e;object-fit:cover;
+  background:#e8d8af;
+}
+.bag-item .bag-icon.placeholder{
+  display:inline-block;width:20px;height:20px;border-radius:4px;border:1px dashed #bfa67e;background:#efe2bd;
+}
+.bag-item .iname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bag-item .count{color:#6a5632;font-weight:700}
