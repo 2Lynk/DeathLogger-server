@@ -1,4 +1,4 @@
-// server.js — DeathLogger mini site (HTML pages + API)
+// server.js — DeathLogger Armory-style site (HTML pages + API)
 // Node 18+ (ESM). Start with: node server.js
 
 import express from "express";
@@ -28,24 +28,28 @@ await fs.mkdir(SHOTS_DIR, { recursive: true });
 await fs.mkdir(PUBLIC_DIR, { recursive: true });
 
 // ---------------- Security / headers -----------
+// 1) Helmet base (turn off HSTS because we’re often on HTTP)
 app.use(
   helmet({
-    hsts: false, // we might be serving over plain HTTP
-    contentSecurityPolicy: {
-      useDefaults: true,
-      directives: {
-        "default-src": ["'self'"],
-        "script-src": ["'self'"],
-        "style-src": ["'self'", "'unsafe-inline'"],
-        "img-src": ["'self'", "data:"],
-        "font-src": ["'self'", "data:"],
-        "object-src": ["'none'"],
-        // Don't force HTTPS; many folks run this on plain HTTP
-        "upgrade-insecure-requests": null,
-      },
-    },
+    hsts: false,
+    // we'll set an explicit CSP header next
+    contentSecurityPolicy: false,
   })
 );
+
+// 2) Explicit CSP header (fixes your “default-src 'none'” issue)
+app.use((req, res, next) => {
+  // Armory-like pages with local assets; allow inline CSS (for small tweaks).
+  const csp =
+    "default-src 'self'; " +
+    "script-src 'self'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data:; " +
+    "font-src 'self' data:; " +
+    "object-src 'none'";
+  res.setHeader("Content-Security-Policy", csp);
+  next();
+});
 
 // Logs
 app.use(morgan("dev"));
@@ -79,21 +83,35 @@ const layout = (title, body) => `<!doctype html>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>${escapeHtml(title)}</title>
+<link rel="icon" href="/public/favicon.ico" />
 <link rel="stylesheet" href="/public/style.css"/>
 </head>
-<body class="wow">
-<header class="wow-header">
-  <div class="crest"><span class="crest-ring"></span><span class="crest-gem"></span></div>
-  <div class="title"><h1>DeathLogger</h1><p class="subtitle">Chronicle of Untimely Ends</p></div>
-  <nav class="nav">
-    <a href="/">Home</a>
-    <a href="/api/deaths">API</a>
-  </nav>
+<body class="armory">
+<header class="a-header">
+  <div class="a-wrap">
+    <div class="a-brand">
+      <span class="crest-ring"></span><span class="crest-gem"></span>
+      <div class="titling">
+        <h1>DeathLogger</h1>
+        <p class="subtitle">Armory of Untimely Ends</p>
+      </div>
+    </div>
+    <nav class="a-nav">
+      <a href="/">Home</a>
+      <a href="/api/deaths">API</a>
+    </nav>
+  </div>
 </header>
-<main class="wow-main">
-${body}
+<main class="a-main">
+  <div class="a-wrap">
+    ${body}
+  </div>
 </main>
-<footer class="wow-footer"><p>© ${new Date().getFullYear()} DeathLogger — For Azeroth!</p></footer>
+<footer class="a-footer">
+  <div class="a-wrap">
+    <p>© ${new Date().getFullYear()} DeathLogger — For Azeroth!</p>
+  </div>
+</footer>
 </body>
 </html>`;
 
@@ -108,12 +126,11 @@ const deathCard = (d) => {
     ? `${d.location.zone ?? ""}${d.location.subzone ? " — " + d.location.subzone : ""} ${fmtCoord(d.location)}`
     : "";
   const killer = fmtKiller(d.killer);
-
   const money = fmtMoneyHTML(d);
 
   return `
-<article class="card parchment">
-  <header class="card-header">
+<article class="panel parchment">
+  <header class="panel-h">
     <h2><a href="/death/${d.id}">${escapeHtml(p)}-${escapeHtml(r)}</a></h2>
     <div class="meta">
       <span class="badge">${when}</span>
@@ -122,10 +139,10 @@ const deathCard = (d) => {
       ${cls || lvl ? `<span class="badge">${escapeHtml([cls, lvl && "Lv. " + lvl].filter(Boolean).join(" · "))}</span>` : ""}
     </div>
   </header>
-  <section class="card-body">
+  <section class="panel-b">
     <p><strong>Slain by:</strong> ${escapeHtml(killer)}</p>
-    ${money ? `<p><strong>Money:</strong> ${money}</p>` : ""}
-    ${d.screenshot ? `<a class="screenshot-link" href="${d.screenshot}" target="_blank">View screenshot</a>` : ""}
+    ${money ? `<p><strong>Purse:</strong> ${money}</p>` : ""}
+    ${d.screenshot ? `<a class="shot" href="${d.screenshot}" target="_blank" rel="noopener">View screenshot</a>` : ""}
   </section>
 </article>`;
 };
@@ -137,15 +154,15 @@ const deathDetail = (d) => {
   return `
 ${base}
 <section class="grid">
-  <div class="card parchment">
-    <header class="card-header"><h3>Equipped</h3></header>
-    <div class="card-body">
+  <div class="panel parchment">
+    <header class="panel-h"><h3>Equipped</h3></header>
+    <div class="panel-b">
       ${eq || "<p class='muted'>No equipment recorded.</p>"}
     </div>
   </div>
-  <div class="card parchment">
-    <header class="card-header"><h3>Bags</h3></header>
-    <div class="card-body">
+  <div class="panel parchment">
+    <header class="panel-h"><h3>Bags</h3></header>
+    <div class="panel-b">
       ${bags || "<p class='muted'>No bag contents recorded.</p>"}
     </div>
   </div>
@@ -157,11 +174,11 @@ const profilePage = (slug, deaths) => {
   const list = deaths.map(deathCard).join("");
   const totals = tallyTotals(deaths);
   return `
-<section class="card parchment">
-  <header class="card-header"><h2>Profile: ${escapeHtml(player)} - ${escapeHtml(realm)}</h2></header>
-  <div class="card-body">
+<section class="panel steel">
+  <header class="panel-h"><h2>Profile: ${escapeHtml(player)} - ${escapeHtml(realm)}</h2></header>
+  <div class="panel-b">
     <p><strong>Total deaths:</strong> ${deaths.length}</p>
-    ${totals.gold !== null ? `<p><strong>Total gold lost (recorded entries):</strong> ${totals.gold}</p>` : ""}
+    ${totals.gold !== null ? `<p><strong>Total gold lost (recorded):</strong> ${totals.gold}</p>` : ""}
   </div>
 </section>
 <section class="grid">
@@ -171,7 +188,6 @@ const profilePage = (slug, deaths) => {
 
 // --------------- formatters --------------------
 function fmtMoneyHTML(d) {
-  // Prefer gold/silver/copper fields; fallback to moneyCopperOnly
   let g, s, c;
   if (d.moneyGold != null || d.moneySilver != null || d.moneyCopper != null) {
     g = d.moneyGold ?? 0;
@@ -253,7 +269,6 @@ function slugFor(d) {
 }
 
 function tallyTotals(deaths) {
-  // sum moneyCopperOnly when present
   let sum = 0;
   let count = 0;
   for (const d of deaths) {
@@ -294,11 +309,9 @@ app.post("/upload", upload.single("screenshot"), async (req, res) => {
     if (!deathRaw) return res.status(400).json({ error: "Missing death payload" });
     const death = JSON.parse(deathRaw);
 
-    // assign id
     const id = crypto.randomUUID();
     death.id = id;
 
-    // save screenshot if present
     if (req.file) {
       const ext =
         req.file.mimetype === "image/png" ? "png" :
@@ -308,7 +321,6 @@ app.post("/upload", upload.single("screenshot"), async (req, res) => {
       death.screenshot = `/screens/${name}`;
     }
 
-    // persist to deaths.json (prepend newest)
     const all = await loadDeaths();
     all.unshift(death);
     await saveDeaths(all);
@@ -322,14 +334,14 @@ app.post("/upload", upload.single("screenshot"), async (req, res) => {
 
 // ---------------- HTML routes -------------------
 
-// Home: latest 50 deaths
+// Home
 app.get("/", async (_req, res) => {
   const deaths = await loadDeaths();
   const body =
     deaths.length === 0
       ? `<section class='grid'><p class='parchment empty'>No deaths yet. The chronicles await…</p></section>`
       : `<section class="grid">${deaths.slice(0, 50).map(deathCard).join("")}</section>`;
-  res.type("html").send(layout("Deaths", body));
+  res.type("html").send(layout("Deaths — Armory", body));
 });
 
 // Death detail
@@ -338,7 +350,7 @@ app.get("/death/:id", async (req, res) => {
   const d = deaths.find((x) => x.id === req.params.id);
   if (!d) return res.status(404).type("html").send(layout("Not found", `<p class='parchment empty'>Death not found.</p>`));
   const body = deathDetail(d);
-  res.type("html").send(layout(`Death of ${escapeHtml(d.player ?? "Unknown")}`, body));
+  res.type("html").send(layout(`Death of ${escapeHtml(d.player ?? "Unknown")} — Armory`, body));
 });
 
 // Player profile
@@ -351,7 +363,7 @@ app.get("/player/:slug", async (req, res) => {
       .type("html")
       .send(layout("Profile not found", `<p class='parchment empty'>No records for ${escapeHtml(req.params.slug)}.</p>`));
   }
-  res.type("html").send(layout(`Profile ${escapeHtml(req.params.slug)}`, profilePage(req.params.slug, mine)));
+  res.type("html").send(layout(`Profile ${escapeHtml(req.params.slug)} — Armory`, profilePage(req.params.slug, mine)));
 });
 
 // ---------------- JSON APIs (optional) ----------
@@ -366,7 +378,7 @@ app.get("/api/death/:id", async (req, res) => {
   res.json(d);
 });
 
-// ---------------- Favicon (optional) ------------
+// ---------------- Favicon -----------------------
 app.get("/favicon.ico", (_req, res) => {
   const ico = path.join(PUBLIC_DIR, "favicon.ico");
   if (existsSync(ico)) return createReadStream(ico).pipe(res);
