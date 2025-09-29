@@ -4,13 +4,10 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+/* ---- HOTFIX: remove giant page-wide radial background ---- */
 body.armory {
-  margin: 0;
-  color: #e6e3d8;
   background:
-    radial-gradient(1200px 800px at 20% -10%, rgba(255,255,255,0.04), transparent 60%),
-    linear-gradient(180deg, #0b0e12, #0a0c10 40%, #08090c);
-  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    linear-gradient(180deg, #0b0e12, #0a0c10 40%, #08090c); /* no big radial up top */
 }
 
 :root{
@@ -41,19 +38,35 @@ body.armory {
   display:flex; align-items:center; gap: 18px;
   padding: 14px 0;
 }
-.a-brand{ display:flex; align-items:center; gap: 14px; position: relative; }
-.crest-ring{
-  width: 42px; height: 42px; border-radius: 50%;
-  border: 2px solid var(--gold);
-  box-shadow: 0 0 12px rgba(217,185,106,0.38) inset, 0 0 9px rgba(217,185,106,0.25);
-  display:inline-block;
+/* ---- HOTFIX: properly contain the crest so it can't overlay ---- */
+.a-brand { position: relative; display:flex; align-items:center; gap: 14px; }
+
+.crest {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
 }
-.crest-gem{
-  position:absolute; width: 18px; height: 18px; left: 12px; top: 14px;
+.crest-ring {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #64d7ff, #0872c9 50%, #07447d);
-  box-shadow: 0 0 12px rgba(79,179,255,0.6);
+  border: 2px solid #d9b96a;
+  box-shadow: 0 0 8px rgba(217,185,106,0.35) inset, 0 0 6px rgba(217,185,106,0.25);
 }
+.crest-gem {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #64d7ff, #0872c9 55%, #07447d);
+  box-shadow: 0 0 8px rgba(79,179,255,0.55);
+  pointer-events: none; /* ensure it's non-interactive */
+}
+
 .titling h1{
   margin:0; font-weight:700; letter-spacing:.3px; font-size: 22px; color:#fff;
   text-shadow: 0 1px 0 #000, 0 0 12px rgba(255,255,255,0.15);
@@ -180,3 +193,4 @@ a:hover{ color:#a8caff; text-decoration: underline; }
 
 /* Optional texture fallback: if you don't have /public/bg/parchment.jpg,
    comment out the url() in .panel.parchment above. */
+
