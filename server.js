@@ -74,7 +74,7 @@ app.disable("x-powered-by");
 
 // Helmet with NO HSTS and NO auto-upgrade
 app.use(helmet({
-  hsts: false,
+  hsts: false, // no HSTS on HTTP
   contentSecurityPolicy: {
     useDefaults: true,
     directives: {
@@ -82,16 +82,19 @@ app.use(helmet({
       "script-src": ["'self'"],
       "style-src": ["'self'", "'unsafe-inline'"],
       "img-src": ["'self'", "data:"],
-      "object-src": ["'none'"]
+      "object-src": ["'none'"],
+      // CRUCIAL: disable auto-upgrade to HTTPS
+      "upgrade-insecure-requests": null
     }
   }
 }));
 
-// Ensure no HSTS header slips in
+// Belt-and-suspenders: make sure no HSTS header slips in
 app.use((_, res, next) => {
   res.removeHeader("Strict-Transport-Security");
   next();
 });
+
 
 app.use(morgan("dev"));
 app.use(express.json({ limit: MAX_JSON_BYTES }));
@@ -198,3 +201,4 @@ app.post("/upload", upload.single("screenshot"), express.text({ type: "text/plai
 app.listen(PORT, () => {
   console.log(`DeathLogger server running at http://localhost:${PORT}`);
 });
+
