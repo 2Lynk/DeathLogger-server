@@ -1,161 +1,181 @@
-/* ======= World of Warcraft-ish theme (no external assets) ======= */
+/* ==============================
+   DeathLogger WoW-esque theme
+   ============================== */
 
+/* Base reset-ish */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body.wow {
+  margin: 0;
+  background: #0a0a0a url('/public/bg/noise.png') repeat;
+  color: #e7e3d0;
+  font-family: ui-serif, Georgia, "Times New Roman", Times, serif;
+  line-height: 1.35;
+}
+
+/* Colors */
 :root{
-  --stone:#0d0f13;
-  --stone-2:#131722;
-  --gold:#e4c26a;
-  --gold-2:#e8c170;
-  --gold-3:#9b7e3c;
-  --red:#b13a2c;
-  --parch:#f3e6c0;
-  --parch-ink:#2f2512;
-  --parch-edge:#c8b389;
-  --ink:#e8e8e8;
-  --muted:#aeb4c0;
-  --border:#2a2f3a;
-  --shadow:0 8px 24px rgba(0,0,0,.35);
+  --gold: #d9b96a;
+  --gold-2: #caa24f;
+  --silver: #c9ced6;
+  --copper: #c77d5b;
+  --ink: #2a241a;
+  --parchment: #f4ead2;
+  --parchment-ink: #2b2012;
+  --parchment-edge: #c9b68f;
+  --accent: #7fb3ff;
+  --accent-2: #5493ff;
+  --muted: #a59b86;
+  --card-glow: 0 0 0 1px rgba(255,255,255,0.04), 0 10px 25px rgba(0,0,0,0.45);
 }
 
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:
-  radial-gradient(1200px 800px at 10% 0, #121622 0, rgba(0,0,0,0) 60%),
-  radial-gradient(800px 600px at 100% 100%, #0f121a 0, rgba(0,0,0,0) 50%),
-  var(--stone);
-color:var(--ink);font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;}
-
-a{color:var(--gold-2);text-decoration:none}
-a:hover{color:#fff}
-
+/* Header */
 .wow-header{
-  position:sticky;top:0;z-index:10;
-  display:flex;align-items:center;gap:16px;
-  padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);
-  background:linear-gradient(180deg, #121723, #0d1016);
-  box-shadow:0 4px 18px rgba(0,0,0,.35);
-}
-.wow-header .crest{position:relative;width:48px;height:48px;flex:0 0 48px;}
-.crest-ring{position:absolute;inset:0;border-radius:50%;
-  background:radial-gradient(circle at 30% 30%, #fff7, #0000),
-             conic-gradient(from 0deg, #a47d2a, #d4b459, #a47d2a);
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));}
-.crest-gem{position:absolute;left:11px;top:11px;width:26px;height:26px;border-radius:50%;
-  background:radial-gradient(circle at 40% 35%, #ffd, #e6b24f 30%, #8a682b 70%, #3a2a10);border:2px solid #2d200b;}
-
-.wow-header .title{flex:1}
-.wow-header h1{
-  margin:0;letter-spacing:.06em;
-  font-weight:800;font-size:20px;text-transform:uppercase;
-  color:var(--gold);
-  text-shadow:0 0 14px rgba(228,194,106,.35), 0 1px 0 #000;
-}
-.wow-header .subtitle{margin:2px 0 0 0;color:var(--muted);font-size:12px;letter-spacing:.08em;}
-
-.wow-header .nav a{
-  margin-left:12px;padding:6px 10px;border:1px solid rgba(255,255,255,.08);
-  border-radius:6px;color:#dcdcdc;background:linear-gradient(#161b27,#10141d);}
-.wow-header .nav a:hover{border-color:var(--gold-2);color:#fff}
-
-.wow-main{max-width:1100px;margin:0 auto;padding:18px}
-
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:18px}
-
-/* Parchment blocks */
-.parchment{
+  display:flex; align-items:center; gap:18px;
+  padding:14px 18px;
   background:
-    radial-gradient(600px 200px at 50% -40%, rgba(0,0,0,.25), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,0) 120px),
-    linear-gradient(180deg, #f6ebc9, #eddab0);
-  color:var(--parch-ink);
-  border:1px solid var(--parch-edge);
-  box-shadow:var(--shadow);
-  border-radius:12px;
+    linear-gradient(180deg, rgba(255,255,255,0.07), rgba(0,0,0,0.2)),
+    radial-gradient(100% 120% at 50% 0%, rgba(217,185,106,0.24), transparent 60%),
+    #121212;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  position: sticky; top:0; z-index: 10;
 }
-.parchment .label{font-weight:700;color:#6c5531}
-
-.card{display:grid;grid-template-columns:1fr 150px;gap:14px;padding:14px 14px 12px 14px;}
-.card h2{margin:0 0 6px;font-size:18px;color:#3a2a10}
-.card .wow-link{color:#7a5b1a}
-.card .wow-link:hover{color:#000}
-.card p{margin:4px 0 0 0}
-
-.card .shot{
-  width:150px;height:112px;object-fit:cover;border-radius:8px;border:1px solid #bfa67e;
-  box-shadow:0 3px 10px rgba(0,0,0,.25);
+.wow-header .crest{ position:relative; width:42px; height:42px; }
+.crest-ring{
+  position:absolute; inset:0; border-radius:50%;
+  border:2px solid var(--gold);
+  box-shadow: 0 0 12px rgba(217,185,106,0.4) inset, 0 0 8px rgba(217,185,106,0.25);
+  display:block;
 }
-.card .shot.placeholder{
-  display:grid;place-items:center;width:150px;height:112px;border-radius:8px;border:1px dashed #bfa67e;color:#8a6c3a;background:#efe2bd;
-  font-size:12px;
+.crest-gem{
+  position:absolute; left:50%; top:50%; width:18px; height:18px;
+  transform: translate(-50%,-50%);
+  border-radius:50%;
+  background: radial-gradient(circle at 30% 30%, #4ec6ff, #0b5ea6 60%, #053e73 100%);
+  box-shadow: 0 0 12px rgba(79,179,255,0.55);
+  display:block;
 }
-
-.detail{padding:18px 18px 14px}
-.detail h2{margin:0 0 10px;font-size:22px;color:#2f2512;letter-spacing:.02em}
-.detail .realm{font-weight:600;color:#6c5531}
-.detail .meta{display:grid;gap:6px;margin-bottom:12px}
-.detail .figure{margin:10px 0 12px}
-.detail img.full{width:100%;height:auto;border-radius:12px;border:1px solid #bfa67e;box-shadow:0 4px 14px rgba(0,0,0,.25)}
-.detail .raw summary{cursor:pointer;color:#6c5531}
-.detail pre{background:#0b0d12;color:#e6e6e6;padding:12px;border-radius:8px;border:1px solid #2a2f3a;overflow-x:auto;font-size:12px}
-
-.parchment.empty{padding:16px;text-align:center}
-
-/* Decorative bars */
-.decor{height:10px;position:relative}
-.decor:before,.decor:after{
-  content:"";position:absolute;top:3px;bottom:3px;border-top:2px solid #bfa67e;border-bottom:2px solid #bfa67e;width:46%;}
-.decor.top:before{left:0} .decor.top:after{right:0}
-.decor.bottom:before{left:0} .decor.bottom:after{right:0}
-
-/* Class badge */
-.wow-badge{
-  display:inline-block;background:linear-gradient(#f6f0da,#edd49f);
-  border:1px solid #c3a769;border-radius:999px;padding:2px 10px;font-weight:800;letter-spacing:.03em;
-  box-shadow:inset 0 1px 0 #fff8, 0 3px 8px rgba(0,0,0,.25);
-  color:var(--parch-ink); position:relative;
+.wow-header .title h1{
+  margin:0; letter-spacing:.5px; font-size:22px; color:#fff;
+  text-shadow: 0 1px 0 #000, 0 0 10px rgba(255,255,255,0.15);
 }
-.wow-badge::after{
-  content:"";position:absolute;inset:0;border-radius:999px;box-shadow:0 0 0 2px var(--class-color) inset, 0 0 12px var(--class-color,.2);
-  pointer-events:none;opacity:.6;
+.wow-header .subtitle{
+  margin:2px 0 0 0; font-size:12px; color: #c8c2b0;
 }
-.wow-badge .lvl{font-weight:900;margin-left:6px;color:#2b2415}
-
-/* Coins inline */
-.coins svg{vertical-align:-2px;margin-left:3px;margin-right:6px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.25))}
-
-/* ===== Bags section (with icons) ===== */
-.bags{margin-top:16px;padding:14px}
-.bags h3{margin:0 0 8px 0;color:#3a2a10}
-.bags .bags-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-
-.bag{
-  background:linear-gradient(#f7edd0,#efdeb3);
-  border:1px solid #d2be95;border-radius:10px;padding:10px 10px 8px;
-  box-shadow:inset 0 1px 0 #fff8;
+.wow-header .nav{ margin-left:auto; display:flex; gap:12px; }
+.wow-header .nav a{
+  color:#e7e3d0; text-decoration:none; font-size:14px; padding:6px 10px;
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:6px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.3));
 }
-.bag-title{
-  font-weight:800;color:#5a4526;letter-spacing:.02em;margin-bottom:6px;
-  display:flex;align-items:center;gap:8px;
-}
-.bag-title::before{
-  content:"";width:10px;height:10px;border-radius:50%;
-  background:radial-gradient(circle at 40% 40%, #fff, #e6b24f 40%, #8a682b 80%, #3a2a10);
-  border:1px solid #2d200b;display:inline-block;
+.wow-header .nav a:hover{
+  border-color: rgba(217,185,106,0.6);
+  box-shadow: 0 0 8px rgba(217,185,106,0.3);
 }
 
-.bag-grid{display:grid;gap:4px}
-.bag-empty{color:#866c3c;font-style:italic;text-align:center;padding:6px 0}
+/* Main layout */
+.wow-main{ padding: 24px 18px 40px; max-width: 1200px; margin: 0 auto; }
 
-/* Each item row now shows an icon */
-.bag-item{
-  display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:8px;
-  padding:4px 8px;border:1px solid #d7c6a1;border-radius:8px;
-  background:linear-gradient(#fffaf0,#f1e2bd);
+/* Cards & parchment */
+.card{
+  background: #14110c;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  box-shadow: var(--card-glow);
+  overflow: hidden;
 }
-.bag-item .bag-icon{
-  width:20px;height:20px;border-radius:4px;border:1px solid #bfa67e;object-fit:cover;
-  background:#e8d8af;
+.parchment {
+  background:
+    url('/public/bg/parchment.jpg') center/cover no-repeat,
+    linear-gradient(180deg, rgba(249,241,216,0.96), rgba(240,228,197,0.92));
+  color: var(--parchment-ink);
+  border: 1px solid var(--parchment-edge);
 }
-.bag-item .bag-icon.placeholder{
-  display:inline-block;width:20px;height:20px;border-radius:4px;border:1px dashed #bfa67e;background:#efe2bd;
+.parchment.empty{
+  padding: 18px;
+  text-align:center; color:#726650;
+  font-style: italic;
 }
-.bag-item .iname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bag-item .count{color:#6a5632;font-weight:700}
+
+/* Card header & body */
+.card-header{ padding: 14px 16px; border-bottom: 1px solid rgba(0,0,0,0.12); }
+.card-header h2{ margin: 0 0 6px; font-size: 20px; }
+.card-header h2 a{ color: inherit; text-decoration:none; }
+.card-header .meta{ display:flex; flex-wrap: wrap; gap:8px; color:#6a5e49; font-size:13px; }
+.card-body{ padding: 14px 16px; }
+
+/* Grids */
+.grid{
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+.grid > .card, .grid > .parchment { grid-column: span 12; }
+@media (min-width: 700px){
+  .grid > .card, .grid > .parchment { grid-column: span 6; }
+}
+@media (min-width: 1000px){
+  .grid > .card, .grid > .parchment { grid-column: span 4; }
+}
+
+/* Lists & subcards */
+.list{ margin: 0; padding: 0 0 0 18px; }
+.list li{ margin: 6px 0; }
+
+.bag{ margin: 8px 0 14px; padding:8px; border:1px dashed rgba(0,0,0,0.2); border-radius:8px; background: rgba(255,255,255,0.3); }
+.bag h4{ margin: 0 0 6px; font-size: 15px; color: #4a3a24; }
+
+/* Badges */
+.badge{
+  display:inline-block; padding: 2px 8px; font-size: 12px;
+  border-radius: 999px; border:1px solid rgba(0,0,0,0.2);
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(0,0,0,0.05));
+  color: #3a2e1c;
+}
+
+/* Coins */
+.money{ display:inline-flex; align-items:center; gap:6px; }
+.coin{
+  display:inline-flex; align-items:center; gap:4px; padding:1px 6px;
+  border-radius: 999px; font-weight:600; font-size: 13px;
+  background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.18);
+}
+.coin .dot{
+  display:inline-block; width:10px; height:10px; border-radius:50%;
+  box-shadow: 0 0 6px rgba(0,0,0,0.25) inset, 0 0 2px rgba(255,255,255,0.5);
+}
+.coin.gold { color: #3e2c07; border-color: rgba(217,185,106,0.8); background: rgba(217,185,106,0.25); }
+.coin.gold .dot{ background: radial-gradient(circle at 30% 30%, var(--gold), var(--gold-2)); }
+.coin.silver { color: #1d232b; border-color: rgba(201,206,214,0.8); background: rgba(201,206,214,0.25); }
+.coin.silver .dot{ background: radial-gradient(circle at 30% 30%, var(--silver), #9ea9b3); }
+.coin.copper { color: #3e2319; border-color: rgba(199,125,91,0.8); background: rgba(199,125,91,0.25); }
+.coin.copper .dot{ background: radial-gradient(circle at 30% 30%, var(--copper), #8f4c37); }
+
+/* Screenshot link */
+.screenshot-link{
+  display:inline-block; margin-top:8px; text-decoration:none; font-weight:600;
+  color:#0f4eca; border-bottom: 1px dashed rgba(15,78,202,0.5);
+}
+.screenshot-link:hover{ color:#5493ff; border-bottom-color:#5493ff; }
+
+/* Footer */
+.wow-footer{
+  margin-top: 30px; padding: 14px 18px; text-align:center; color:#9e947f;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(0deg, rgba(255,255,255,0.03), rgba(0,0,0,0.1));
+}
+
+/* Utility */
+.muted{ color:#8a816d; }
+a{ color: var(--accent); }
+a:hover{ color: var(--accent-2); }
+
+/* Optional: container card for profile header/details */
+.container{ max-width: 1200px; margin: 0 auto; }
+
+/* Tiny mobile polish */
+@media (max-width: 420px){
+  .wow-header .nav a{ padding: 6px 8px; font-size: 13px; }
+  .card-header h2{ font-size: 18px; }
+}
