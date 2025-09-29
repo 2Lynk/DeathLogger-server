@@ -1,138 +1,146 @@
 /* ==============================
-   DeathLogger WoW-esque theme
+   DeathLogger — Armory-like UI
    ============================== */
 
-/* Base reset-ish */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
-body.wow {
+body.armory {
   margin: 0;
-  background: #0a0a0a url('/public/bg/noise.png') repeat;
-  color: #e7e3d0;
-  font-family: ui-serif, Georgia, "Times New Roman", Times, serif;
-  line-height: 1.35;
+  color: #e6e3d8;
+  background:
+    radial-gradient(1200px 800px at 20% -10%, rgba(255,255,255,0.04), transparent 60%),
+    linear-gradient(180deg, #0b0e12, #0a0c10 40%, #08090c);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
 }
 
-/* Colors */
 :root{
   --gold: #d9b96a;
   --gold-2: #caa24f;
-  --silver: #c9ced6;
-  --copper: #c77d5b;
-  --ink: #2a241a;
-  --parchment: #f4ead2;
-  --parchment-ink: #2b2012;
+  --steel-1: #1a1f27;
+  --steel-2: #0f1319;
+  --steel-3: #0a0d12;
+  --ink: #1d2026;
+  --muted: #9ea5ad;
+  --parchment-ink: #2c210f;
   --parchment-edge: #c9b68f;
-  --accent: #7fb3ff;
-  --accent-2: #5493ff;
-  --muted: #a59b86;
-  --card-glow: 0 0 0 1px rgba(255,255,255,0.04), 0 10px 25px rgba(0,0,0,0.45);
 }
 
-/* Header */
-.wow-header{
-  display:flex; align-items:center; gap:18px;
-  padding:14px 18px;
+/* Layout containers */
+.a-wrap { max-width: 1200px; margin: 0 auto; padding: 0 18px; }
+
+/* Header — steel + gold accents */
+.a-header{
+  position: sticky; top: 0; z-index: 10;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.07), rgba(0,0,0,0.2)),
-    radial-gradient(100% 120% at 50% 0%, rgba(217,185,106,0.24), transparent 60%),
-    #121212;
+    radial-gradient(100% 140% at 0% 0%, rgba(217,185,106,0.08), transparent 60%),
+    linear-gradient(180deg, #1c2530, #0f151c 70%, #0b0f15);
   border-bottom: 1px solid rgba(255,255,255,0.08);
-  position: sticky; top:0; z-index: 10;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
 }
-.wow-header .crest{ position:relative; width:42px; height:42px; }
+.a-header .a-wrap{
+  display:flex; align-items:center; gap: 18px;
+  padding: 14px 0;
+}
+.a-brand{ display:flex; align-items:center; gap: 14px; position: relative; }
 .crest-ring{
-  position:absolute; inset:0; border-radius:50%;
-  border:2px solid var(--gold);
-  box-shadow: 0 0 12px rgba(217,185,106,0.4) inset, 0 0 8px rgba(217,185,106,0.25);
-  display:block;
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 12px rgba(217,185,106,0.38) inset, 0 0 9px rgba(217,185,106,0.25);
+  display:inline-block;
 }
 .crest-gem{
-  position:absolute; left:50%; top:50%; width:18px; height:18px;
-  transform: translate(-50%,-50%);
-  border-radius:50%;
-  background: radial-gradient(circle at 30% 30%, #4ec6ff, #0b5ea6 60%, #053e73 100%);
-  box-shadow: 0 0 12px rgba(79,179,255,0.55);
-  display:block;
+  position:absolute; width: 18px; height: 18px; left: 12px; top: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #64d7ff, #0872c9 50%, #07447d);
+  box-shadow: 0 0 12px rgba(79,179,255,0.6);
 }
-.wow-header .title h1{
-  margin:0; letter-spacing:.5px; font-size:22px; color:#fff;
-  text-shadow: 0 1px 0 #000, 0 0 10px rgba(255,255,255,0.15);
+.titling h1{
+  margin:0; font-weight:700; letter-spacing:.3px; font-size: 22px; color:#fff;
+  text-shadow: 0 1px 0 #000, 0 0 12px rgba(255,255,255,0.15);
 }
-.wow-header .subtitle{
-  margin:2px 0 0 0; font-size:12px; color: #c8c2b0;
+.titling .subtitle{
+  margin:2px 0 0 0; font-size: 12px; color: #cfd4db;
 }
-.wow-header .nav{ margin-left:auto; display:flex; gap:12px; }
-.wow-header .nav a{
-  color:#e7e3d0; text-decoration:none; font-size:14px; padding:6px 10px;
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:6px;
+.a-nav{ margin-left:auto; display:flex; gap: 10px; }
+.a-nav a{
+  color:#e6e3d8; text-decoration:none; font-size:14px;
+  padding: 7px 12px; border-radius: 7px;
+  border: 1px solid rgba(255,255,255,0.1);
   background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.3));
 }
-.wow-header .nav a:hover{
-  border-color: rgba(217,185,106,0.6);
-  box-shadow: 0 0 8px rgba(217,185,106,0.3);
+.a-nav a:hover{
+  border-color: rgba(217,185,106,0.7);
+  box-shadow: 0 0 10px rgba(217,185,106,0.35);
 }
 
-/* Main layout */
-.wow-main{ padding: 24px 18px 40px; max-width: 1200px; margin: 0 auto; }
+/* Main */
+.a-main{ padding: 22px 0 36px; }
 
-/* Cards & parchment */
-.card{
-  background: #14110c;
+/* Footer */
+.a-footer{
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.1));
+  color: #aeb5bd;
+  padding: 14px 0 24px;
+  text-align:center;
+}
+
+/* Panels */
+.panel{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)),
+    linear-gradient(180deg, #151a22, #0e1218 60%, #0b0e13);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 10px;
-  box-shadow: var(--card-glow);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
   overflow: hidden;
 }
-.parchment {
+.panel.steel{
   background:
-    url('/public/bg/parchment.jpg') center/cover no-repeat,
-    linear-gradient(180deg, rgba(249,241,216,0.96), rgba(240,228,197,0.92));
+    radial-gradient(120% 120% at 10% 0%, rgba(217,185,106,0.10), transparent 50%),
+    linear-gradient(180deg, #18202a, #0f141b 60%, #0b0f14);
+}
+.panel.parchment{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.85), rgba(253,248,233,0.9)),
+    url('/public/bg/parchment.jpg') center/cover no-repeat;
   color: var(--parchment-ink);
   border: 1px solid var(--parchment-edge);
 }
-.parchment.empty{
-  padding: 18px;
-  text-align:center; color:#726650;
-  font-style: italic;
-}
+.panel-h{ padding: 14px 16px; border-bottom: 1px solid rgba(0,0,0,0.15); }
+.panel-h h2, .panel-h h3{ margin: 0; }
+.panel-b{ padding: 14px 16px; }
 
-/* Card header & body */
-.card-header{ padding: 14px 16px; border-bottom: 1px solid rgba(0,0,0,0.12); }
-.card-header h2{ margin: 0 0 6px; font-size: 20px; }
-.card-header h2 a{ color: inherit; text-decoration:none; }
-.card-header .meta{ display:flex; flex-wrap: wrap; gap:8px; color:#6a5e49; font-size:13px; }
-.card-body{ padding: 14px 16px; }
-
-/* Grids */
+/* Grid */
 .grid{
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 16px;
+  margin-top: 16px;
 }
-.grid > .card, .grid > .parchment { grid-column: span 12; }
-@media (min-width: 700px){
-  .grid > .card, .grid > .parchment { grid-column: span 6; }
+.grid > .panel { grid-column: span 12; }
+@media (min-width: 720px){
+  .grid > .panel { grid-column: span 6; }
 }
-@media (min-width: 1000px){
-  .grid > .card, .grid > .parchment { grid-column: span 4; }
+@media (min-width: 1024px){
+  .grid > .panel { grid-column: span 4; }
 }
 
-/* Lists & subcards */
-.list{ margin: 0; padding: 0 0 0 18px; }
-.list li{ margin: 6px 0; }
-
-.bag{ margin: 8px 0 14px; padding:8px; border:1px dashed rgba(0,0,0,0.2); border-radius:8px; background: rgba(255,255,255,0.3); }
-.bag h4{ margin: 0 0 6px; font-size: 15px; color: #4a3a24; }
-
-/* Badges */
+/* Meta badges */
 .badge{
   display:inline-block; padding: 2px 8px; font-size: 12px;
   border-radius: 999px; border:1px solid rgba(0,0,0,0.2);
   background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(0,0,0,0.05));
-  color: #3a2e1c;
+  color: #3a2e1c; margin-right: 6px;
 }
+.meta{ margin-top: 6px; }
+
+/* Lists etc */
+.list{ margin: 0; padding: 0 0 0 18px; }
+.list li{ margin: 6px 0; }
+.bag{ margin: 8px 0 14px; padding:8px; border:1px dashed rgba(0,0,0,0.18); border-radius:8px; background: rgba(255,255,255,0.3); }
+.bag h4{ margin: 0 0 6px; font-size: 15px; color: #4a3a24; }
+.muted{ color:#766a58; }
 
 /* Coins */
 .money{ display:inline-flex; align-items:center; gap:6px; }
@@ -141,41 +149,34 @@ body.wow {
   border-radius: 999px; font-weight:600; font-size: 13px;
   background: rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.18);
 }
-.coin .dot{
-  display:inline-block; width:10px; height:10px; border-radius:50%;
+.coin .dot{ width:10px; height:10px; border-radius:50%; display:inline-block;
   box-shadow: 0 0 6px rgba(0,0,0,0.25) inset, 0 0 2px rgba(255,255,255,0.5);
 }
-.coin.gold { color: #3e2c07; border-color: rgba(217,185,106,0.8); background: rgba(217,185,106,0.25); }
+.coin.gold { color: #3e2c07; border-color: rgba(217,185,106,0.8); background: rgba(217,185,106,0.22); }
 .coin.gold .dot{ background: radial-gradient(circle at 30% 30%, var(--gold), var(--gold-2)); }
-.coin.silver { color: #1d232b; border-color: rgba(201,206,214,0.8); background: rgba(201,206,214,0.25); }
-.coin.silver .dot{ background: radial-gradient(circle at 30% 30%, var(--silver), #9ea9b3); }
-.coin.copper { color: #3e2319; border-color: rgba(199,125,91,0.8); background: rgba(199,125,91,0.25); }
-.coin.copper .dot{ background: radial-gradient(circle at 30% 30%, var(--copper), #8f4c37); }
+.coin.silver { color: #1d232b; border-color: rgba(201,206,214,0.8); background: rgba(201,206,214,0.22); }
+.coin.silver .dot{ background: radial-gradient(circle at 30% 30%, #c9ced6, #9ea9b3); }
+.coin.copper { color: #3e2319; border-color: rgba(199,125,91,0.8); background: rgba(199,125,91,0.22); }
+.coin.copper .dot{ background: radial-gradient(circle at 30% 30%, #c77d5b, #8f4c37); }
+
+/* Links */
+a{ color:#7fb3ff; text-decoration: none; }
+a:hover{ color:#a8caff; text-decoration: underline; }
 
 /* Screenshot link */
-.screenshot-link{
-  display:inline-block; margin-top:8px; text-decoration:none; font-weight:600;
-  color:#0f4eca; border-bottom: 1px dashed rgba(15,78,202,0.5);
+.shot{ display:inline-block; margin-top:8px; font-weight:600; }
+
+/* Empty parchment */
+.parchment.empty{
+  grid-column: span 12;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.92), rgba(251,245,226,0.9));
+  color: var(--parchment-ink);
+  border: 1px solid var(--parchment-edge);
+  border-radius: 10px;
+  padding: 18px;
+  text-align:center; font-style: italic;
 }
-.screenshot-link:hover{ color:#5493ff; border-bottom-color:#5493ff; }
 
-/* Footer */
-.wow-footer{
-  margin-top: 30px; padding: 14px 18px; text-align:center; color:#9e947f;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  background: linear-gradient(0deg, rgba(255,255,255,0.03), rgba(0,0,0,0.1));
-}
-
-/* Utility */
-.muted{ color:#8a816d; }
-a{ color: var(--accent); }
-a:hover{ color: var(--accent-2); }
-
-/* Optional: container card for profile header/details */
-.container{ max-width: 1200px; margin: 0 auto; }
-
-/* Tiny mobile polish */
-@media (max-width: 420px){
-  .wow-header .nav a{ padding: 6px 8px; font-size: 13px; }
-  .card-header h2{ font-size: 18px; }
-}
+/* Optional texture fallback: if you don't have /public/bg/parchment.jpg,
+   comment out the url() in .panel.parchment above. */
